@@ -7,8 +7,8 @@ title: "智联云科，你的云原生管家"
 subtitle: ''
 description: ''
 keywords:
-author: John Doe
-language: en
+author: 智联云科
+language: zh-CN
 timezone: ''
 
 # URL
@@ -43,14 +43,15 @@ render_drafts: false
 post_asset_folder: false
 relative_link: false
 future: true
-syntax_highlighter: highlight.js
 highlight:
+  enable: true
   line_number: true
-  auto_detect: false
+  auto_detect: true
   tab_replace: ''
   wrap: true
-  hljs: false
+  hljs: true
 prismjs:
+  enable: true
   preprocess: true
   line_number: true
   tab_replace: ''
@@ -96,9 +97,13 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: landscape
+#theme: landscape
+theme: butterfly
+#theme: fluid
+#theme: matery
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: ''
+
