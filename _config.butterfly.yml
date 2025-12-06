@@ -74,7 +74,7 @@ default_top_img:
 
 # 主页的横幅图片
 index_img:
-  - /medias/banner/1.jpg
+  - /medias/banner/2.jpg
 
 # 归档页的横幅图片
 archive_img:
