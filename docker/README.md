@@ -1,3 +1,45 @@
+# Hexo Docker
+
+## Theme Control
+
+- THEME_MODE: `auto` | `keep` | `force-butterfly`
+  - `auto`: Install theme and switch only if site theme is unset or default (`DEFAULT_SITE_THEME`).
+  - `keep`: Do not change site theme; only ensure theme repo exists and renderers are installed.
+  - `force-butterfly`: Always set site theme to Butterfly.
+- THEME_NAME: Default `butterfly`.
+- THEME_REPO: Default `https://github.com/jerryc127/hexo-theme-butterfly.git`.
+- DEFAULT_SITE_THEME: Default `landscape`.
+- ALLOW_CONFIG_INIT: Default `true`. If `_config.<theme>.yml` is missing, initialize from theme's default.
+
+### Examples
+
+Auto mode (default):
+```
+docker run --rm -p 4000:4000 -p 9001:9001 \
+  -e REPO_URL="<repo>" -e REPO_BRANCH="main" \
+  -e THEME_MODE=auto \
+  hexo-site:latest
+```
+
+Keep mode:
+```
+docker run --rm -p 4000:4000 -p 9001:9001 \
+  -e THEME_MODE=keep \
+  hexo-site:latest
+```
+
+Force Butterfly:
+```
+docker run --rm -p 4000:4000 -p 9001:9001 \
+  -e THEME_MODE=force-butterfly \
+  hexo-site:latest
+```
+
+## Config Application
+
+- Both webhook and periodic poller will rebuild and gracefully restart the Hexo server to apply changes in `_config.yml` and theme configs.
+- Server PID is managed via `/tmp/hexo-server.pid`; logs at `/tmp/hexo-server.log`.
+
 # Hexo Docker 镜像（支持自动拉取、构建与 webhook）
 
 该镜像用于在容器中运行 Hexo 博客，支持：

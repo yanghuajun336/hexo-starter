@@ -9,7 +9,12 @@ ENV REPO_URL="" \
 	GIT_USER="hexo" \
 	GIT_EMAIL="hexo@example.com" \
 	START_CMD="npx hexo server -i 0.0.0.0 -p $HEXO_PORT" \
-	BUILD_CMD="npx hexo generate"
+	BUILD_CMD="npx hexo generate" \
+	THEME_MODE="auto" \
+	THEME_NAME="butterfly" \
+	THEME_REPO="https://github.com/jerryc127/hexo-theme-butterfly.git" \
+	DEFAULT_SITE_THEME="landscape" \
+	ALLOW_CONFIG_INIT="true"
 
 WORKDIR /var/www/hexo
 

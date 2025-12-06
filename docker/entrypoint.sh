@@ -52,78 +52,66 @@ if [ -f package.json ]; then
   npm install --no-audit --no-fund || true
 fi
 
-# ========== Theme: Butterfly auto-setup (only when theme is 'landscape') ==========
-echo "[hexo-container] Checking project theme to decide whether to install Butterfly..."
+# ========== Theme setup (env-driven, idempotent) ==========
+THEME_MODE=${THEME_MODE:-auto}
+THEME_NAME=${THEME_NAME:-butterfly}
+THEME_REPO=${THEME_REPO:-https://github.com/jerryc127/hexo-theme-butterfly.git}
+DEFAULT_SITE_THEME=${DEFAULT_SITE_THEME:-landscape}
+ALLOW_CONFIG_INIT=${ALLOW_CONFIG_INIT:-true}
 
-# Determine current theme by scanning all _config*.yml files.
-# If any config file specifies a non-default theme (not 'landscape'),
-# we should skip installing Butterfly to avoid overwriting the user's choice.
-skip_install="false"
-found_any="false"
-current_theme=""
-nondefault_theme=""
-nondefault_file=""
-for cfg in _config*.yml; do
-  if [ -f "${cfg}" ]; then
-    val=$(awk -F': ' '/^theme:/ {gsub(/\r/, "", $2); print $2; exit}' "${cfg}" || true)
-    if [ -n "${val}" ]; then
-      found_any="true"
-      # If any config sets a theme that is not the default 'landscape', skip installation
-      if [ "${val}" != "landscape" ]; then
-        skip_install="true"
-        nondefault_theme="${val}"
-        nondefault_file="${cfg}"
-        current_theme="${val}"
-        break
-      else
-        # record that we saw the default explicitly
-        current_theme="${val}"
-      fi
-    fi
-  fi
-done
+echo "[hexo-container] Theme control: mode=${THEME_MODE} name=${THEME_NAME} defaultSiteTheme=${DEFAULT_SITE_THEME}"
 
-if [ "${skip_install}" = "true" ]; then
-  echo "[hexo-container] Found non-default theme '${nondefault_theme}' in ${nondefault_file} — skipping Butterfly installation to avoid overwriting user's theme."
+# Ensure theme directory exists (install if missing)
+if [ -d "themes/${THEME_NAME}" ]; then
+  echo "[hexo-container] Theme '${THEME_NAME}' already present — skip clone."
 else
-  if [ "${found_any}" = "true" ]; then
-    echo "[hexo-container] No non-default theme found; proceeding since theme is '${current_theme:-<none>}'"
-  else
-    echo "[hexo-container] No theme found in any _config*.yml (treating as not set)"
-  fi
+  echo "[hexo-container] Cloning theme '${THEME_NAME}' from ${THEME_REPO}..."
+  git clone -b master "${THEME_REPO}" "themes/${THEME_NAME}" || true
+fi
 
-  # Proceed with installation because no explicit non-default theme was found
-  echo "[hexo-container] Proceeding to install Butterfly theme (safe)."
-  # mkdir -p themes
+# Initialize theme-specific config if allowed and missing
+if [ "${ALLOW_CONFIG_INIT}" = "true" ] && [ ! -f "_config.${THEME_NAME}.yml" ] && [ -f "themes/${THEME_NAME}/_config.yml" ]; then
+  cp "themes/${THEME_NAME}/_config.yml" "_config.${THEME_NAME}.yml"
+  echo "[hexo-container] Initialized _config.${THEME_NAME}.yml from theme default."
+fi
 
-  if [ -d "themes/butterfly" ]; then
-    echo "[hexo-container] 'themes/butterfly' already exists — skipping clone."
-  else
-    echo "[hexo-container] Cloning butterfly theme into themes/butterfly..."
-    git clone -b master https://github.com/jerryc127/hexo-theme-butterfly.git themes/butterfly || true
-  fi
+# Read current site theme from _config.yml (if exists)
+current_site_theme=""
+if [ -f _config.yml ]; then
+  current_site_theme=$(awk -F': ' '/^theme:/ {gsub(/\r/, "", $2); print $2; exit}' _config.yml || true)
+fi
 
-  # Copy theme's default config to project's _config.butterfly.yml if it doesn't exist
-  if [ ! -f _config.butterfly.yml ] && [ -f themes/butterfly/_config.yml ]; then
-    cp themes/butterfly/_config.yml _config.butterfly.yml
-    echo "[hexo-container] Created _config.butterfly.yml from theme default."
-  fi
-
-  # Back up and set theme to butterfly
-  if [ -f _config.yml ]; then
-    echo "[hexo-container] Backing up existing _config.yml to _config.yml.bak and setting theme: butterfly"
-    cp _config.yml _config.yml.bak || true
-    if grep -qE '^theme:' _config.yml 2>/dev/null; then
-      sed -i 's/^theme:.*/theme: butterfly/' _config.yml || true
+should_switch="false"
+case "${THEME_MODE}" in
+  keep)
+    echo "[hexo-container] THEME_MODE=keep — not changing site theme."
+    ;;
+  force-butterfly|force)
+    should_switch="true"
+    ;;
+  auto|*)
+    if [ -z "${current_site_theme}" ] || [ "${current_site_theme}" = "${DEFAULT_SITE_THEME}" ]; then
+      should_switch="true"
     else
-      echo "theme: butterfly" >> _config.yml
+      echo "[hexo-container] Existing non-default theme '${current_site_theme}' — keeping user's choice."
+    fi
+    ;;
+esac
+
+if [ "${should_switch}" = "true" ]; then
+  echo "[hexo-container] Switching site theme to '${THEME_NAME}' (with backup)."
+  if [ -f _config.yml ]; then
+    cp _config.yml "_config.yml.bak.$(date +%Y%m%d%H%M%S)" || true
+    if grep -qE '^theme:' _config.yml 2>/dev/null; then
+      sed -i "s/^theme:.*/theme: ${THEME_NAME}/" _config.yml || true
+    else
+      echo "theme: ${THEME_NAME}" >> _config.yml
     fi
   else
-    echo "[hexo-container] No _config.yml found — creating one with theme: butterfly"
-    echo "theme: butterfly" > _config.yml
+    echo "theme: ${THEME_NAME}" > _config.yml
   fi
-
-  # Renderers are preinstalled in the image at build time; no runtime install needed.
+else
+  echo "[hexo-container] Theme switch skipped (mode=${THEME_MODE})."
 fi
 
 # ==========================================================
