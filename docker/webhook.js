@@ -7,6 +7,7 @@ const port = process.env.WEBHOOK_PORT || 9001;
 const secret = process.env.WEBHOOK_SECRET || '';
 const branch = process.env.REPO_BRANCH || 'main';
 const buildCmd = process.env.BUILD_CMD || 'npx hexo generate';
+const startCmd = process.env.START_CMD || 'npx hexo server -i 0.0.0.0 -p 4000';
 
 function verifySignature(buf, signature) {
   if (!secret) return true;
@@ -40,6 +41,16 @@ const server = http.createServer((req, res) => {
       if (err) console.error('[webhook] error:', err);
       if (stdout) console.log('[webhook] stdout:', stdout);
       if (stderr) console.error('[webhook] stderr:', stderr);
+
+      // After build, restart Hexo server to ensure config changes take effect
+      // Hexo server does not hot-reload _config.yml; restart on each webhook.
+      const restart = `pkill -f "hexo server" || true && nohup sh -c "${startCmd}" >/tmp/hexo-server.log 2>&1 &`;
+      exec(restart, {cwd: process.cwd(), env: process.env, shell: '/bin/bash'}, (rErr, rOut, rErrOut) => {
+        if (rErr) console.error('[webhook] restart error:', rErr);
+        if (rOut) console.log('[webhook] restart stdout:', rOut);
+        if (rErrOut) console.error('[webhook] restart stderr:', rErrOut);
+        console.log('[webhook] Hexo server restarted to apply config changes.');
+      });
     });
   });
 });

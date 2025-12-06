@@ -143,6 +143,9 @@ node /usr/local/bin/webhook.js &
       git reset --hard "origin/${REPO_BRANCH}" || git pull origin "${REPO_BRANCH}" || true
       npm install --no-audit --no-fund || true
       ${BUILD_CMD} || true
+      echo "[hexo-container] Restarting Hexo server to apply config changes..."
+      pkill -f "hexo server" || true
+      nohup sh -c "${START_CMD}" >/tmp/hexo-server.log 2>&1 &
     else
       echo "[hexo-container] No changes found."
     fi
