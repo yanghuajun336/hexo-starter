@@ -3,6 +3,27 @@ set -e
 
 echo "[hexo-container] Starting with REPO_URL=${REPO_URL:-<none>}"
 
+# Graceful Hexo server stop/start helpers (avoid pkill dependency)
+stop_hexo() {
+  if [ -f /tmp/hexo-server.pid ]; then
+    pid=$(cat /tmp/hexo-server.pid 2>/dev/null || true)
+    if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+      echo "[hexo-container] Stopping Hexo server (pid ${pid})..."
+      kill "${pid}" 2>/dev/null || true
+      sleep 2
+    fi
+    rm -f /tmp/hexo-server.pid || true
+  else
+    echo "[hexo-container] No PID file found; nothing to stop."
+  fi
+}
+
+start_hexo_bg() {
+  echo "[hexo-container] Starting Hexo server (background) ..."
+  nohup sh -c "${START_CMD}" >/tmp/hexo-server.log 2>&1 &
+  echo $! >/tmp/hexo-server.pid
+}
+
 # Configure git identity
 git config --global user.name "${GIT_USER:-hexo}"
 git config --global user.email "${GIT_EMAIL:-hexo@example.com}"
@@ -144,8 +165,8 @@ node /usr/local/bin/webhook.js &
       npm install --no-audit --no-fund || true
       ${BUILD_CMD} || true
       echo "[hexo-container] Restarting Hexo server to apply config changes..."
-      pkill -f "hexo server" || true
-      nohup sh -c "${START_CMD}" >/tmp/hexo-server.log 2>&1 &
+      stop_hexo || true
+      start_hexo_bg || true
     else
       echo "[hexo-container] No changes found."
     fi
@@ -156,5 +177,12 @@ done) &
 echo "[hexo-container] Running initial build..."
 ${BUILD_CMD} || true
 
-echo "[hexo-container] Starting Hexo server (foreground)..."
-exec sh -c "${START_CMD}"
+echo "[hexo-container] Starting Hexo server (managed background)..."
+start_hexo_bg
+# Keep container alive by waiting on the Hexo server PID
+if [ -f /tmp/hexo-server.pid ]; then
+  wait "$(cat /tmp/hexo-server.pid)"
+else
+  # Fallback: tail the log if PID missing
+  tail -f /tmp/hexo-server.log
+fi
