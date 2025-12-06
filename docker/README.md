@@ -1,44 +1,44 @@
 # Hexo Docker
 
-## Theme Control
+## 主题控制（中文）
 
-- THEME_MODE: `auto` | `keep` | `force-butterfly`
-  - `auto`: Install theme and switch only if site theme is unset or default (`DEFAULT_SITE_THEME`).
-  - `keep`: Do not change site theme; only ensure theme repo exists and renderers are installed.
-  - `force-butterfly`: Always set site theme to Butterfly.
-- THEME_NAME: Default `butterfly`.
-- THEME_REPO: Default `https://github.com/jerryc127/hexo-theme-butterfly.git`.
-- DEFAULT_SITE_THEME: Default `landscape`.
-- ALLOW_CONFIG_INIT: Default `true`. If `_config.<theme>.yml` is missing, initialize from theme's default.
+- THEME_MODE：`auto` | `keep` | `force-butterfly`
+  - `auto`（默认）：当站点主题未设置或为默认主题（由 `DEFAULT_SITE_THEME` 指定，默认 `landscape`）时，安装并切换到 Butterfly；若已是非默认主题，则仅安装不切换。
+  - `keep`：不修改站点主题；只保证主题仓库存在、渲染器依赖安装完整。
+  - `force-butterfly`：始终将站点主题设置为 Butterfly（谨慎使用）。
+- THEME_NAME：主题名称，默认 `butterfly`。
+- THEME_REPO：主题仓库地址，默认 `https://github.com/jerryc127/hexo-theme-butterfly.git`。
+- DEFAULT_SITE_THEME：站点的默认主题名，默认 `landscape`。
+- ALLOW_CONFIG_INIT：默认 `true`。当 `_config.<theme>.yml` 不存在时，从主题默认 `_config.yml` 初始化一份，不会覆盖已有文件。
 
-### Examples
+### 示例
 
-Auto mode (default):
+自动模式（默认）：
 ```
 docker run --rm -p 4000:4000 -p 9001:9001 \
-  -e REPO_URL="<repo>" -e REPO_BRANCH="main" \
+  -e REPO_URL="<你的仓库URL>" -e REPO_BRANCH="main" \
   -e THEME_MODE=auto \
   hexo-site:latest
 ```
 
-Keep mode:
+保持现有主题：
 ```
 docker run --rm -p 4000:4000 -p 9001:9001 \
   -e THEME_MODE=keep \
   hexo-site:latest
 ```
 
-Force Butterfly:
+强制切换到 Butterfly：
 ```
 docker run --rm -p 4000:4000 -p 9001:9001 \
   -e THEME_MODE=force-butterfly \
   hexo-site:latest
 ```
 
-## Config Application
+## 配置生效与服务重启
 
-- Both webhook and periodic poller will rebuild and gracefully restart the Hexo server to apply changes in `_config.yml` and theme configs.
-- Server PID is managed via `/tmp/hexo-server.pid`; logs at `/tmp/hexo-server.log`.
+- 无论是 Webhook 还是定时轮询触发更新，都会在拉取并生成后“优雅地重启” Hexo 服务，以应用 `_config.yml` 和主题配置的变更。
+- 服务 PID 文件路径：`/tmp/hexo-server.pid`；运行日志：`/tmp/hexo-server.log`。
 
 # Hexo Docker 镜像（支持自动拉取、构建与 webhook）
 
