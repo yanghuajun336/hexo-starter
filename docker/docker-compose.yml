@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
     environment:
       # 基础设置
-      REPO_URL: "${REPO_URL:-}"           # 远程仓库地址（可留空，挂载本地则不需要）
+      REPO_URL: "${REPO_URL:-https://gitee.com/Joee_Yang/hexo-starter.git}"           # 远程仓库地址（可留空，挂载本地则不需要）
       REPO_BRANCH: "${REPO_BRANCH:-master}"
       GIT_USER: "${GIT_USER:-hexo}"
       GIT_EMAIL: "${GIT_EMAIL:-hexo@example.com}"
