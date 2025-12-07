@@ -134,12 +134,12 @@ if [ -f package.json ] || [ -d node_modules ]; then
   fi
 fi
 
-# Start webhook server in background
-echo "[hexo-container] Starting webhook listener on port ${WEBHOOK_PORT}..."
+# Start webhook server in background (generator only)
+echo "[hexo-container] Starting webhook listener on port ${WEBHOOK_PORT} (generator mode)..."
 export PORT=${WEBHOOK_PORT}
 node /usr/local/bin/webhook.js &
 
-# Background periodic poller
+# Background periodic poller (pull + generate, no server restart)
 (while true; do
   sleep "${PULL_INTERVAL}"
   if [ -n "${REPO_URL}" ]; then
@@ -148,29 +148,22 @@ node /usr/local/bin/webhook.js &
     LOCAL=$(git rev-parse HEAD 2>/dev/null || true)
     REMOTE=$(git rev-parse "origin/${REPO_BRANCH}" 2>/dev/null || true)
     if [ "${LOCAL}" != "${REMOTE}" ]; then
-      echo "[hexo-container] Changes detected — pulling and rebuilding"
+      echo "[hexo-container] Changes detected — pulling and regenerating"
       git reset --hard "origin/${REPO_BRANCH}" || git pull origin "${REPO_BRANCH}" || true
       npm install --no-audit --no-fund || true
       ${BUILD_CMD} || true
-      echo "[hexo-container] Restarting Hexo server to apply config changes..."
-      stop_hexo || true
-      start_hexo_bg || true
+      echo "[hexo-container] Regeneration complete; Nginx serves updated public/."
     else
       echo "[hexo-container] No changes found."
     fi
   fi
 done) &
 
-# Initial build
-echo "[hexo-container] Running initial build..."
+# Initial generate and start Nginx in foreground
+echo "[hexo-container] Running initial generate (hexo build)..."
 ${BUILD_CMD} || true
 
-echo "[hexo-container] Starting Hexo server (managed background)..."
-start_hexo_bg
-# Keep container alive by waiting on the Hexo server PID
-if [ -f /tmp/hexo-server.pid ]; then
-  wait "$(cat /tmp/hexo-server.pid)"
-else
-  # Fallback: tail the log if PID missing
-  tail -f /tmp/hexo-server.log
-fi
+echo "[hexo-container] Starting Nginx (foreground as PID 1) ..."
+mkdir -p /run/nginx || true
+nginx -t -c /etc/nginx/nginx.conf || true
+exec nginx -g 'daemon off;' -c /etc/nginx/nginx.conf

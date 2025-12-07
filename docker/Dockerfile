@@ -8,7 +8,6 @@ ENV REPO_URL="" \
 	WEBHOOK_SECRET="" \
 	GIT_USER="hexo" \
 	GIT_EMAIL="hexo@example.com" \
-	START_CMD="npx hexo server -i 0.0.0.0 -p $HEXO_PORT" \
 	BUILD_CMD="npx hexo generate" \
 	THEME_MODE="auto" \
 	THEME_NAME="butterfly" \
@@ -25,12 +24,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	curl \
 	build-essential \
 	python3 \
+	nginx \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& npm set progress=false \
 	&& npm install -g hexo-cli@6 hexo-renderer-pug hexo-renderer-stylus >/dev/null 2>&1 || true
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY webhook.js /usr/local/bin/webhook.js
+COPY nginx.conf /etc/nginx/nginx.conf
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE ${HEXO_PORT}
