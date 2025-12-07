@@ -1,5 +1,15 @@
 ---
-title: Hello World - test 
+title: Hello World - test  
+date: 2024-06-10 12:00:00
+tags:
+    - introduction
+categories:
+    - general
+
+
 ---
+
+# 测试文章是否生效
+
 Welcome to [Hexo](https://hexo.io/)! This is your very first post. Check [documentation](https://hexo.io/docs/) for more info. If you get any problems when using Hexo, you can find the answer in [troubleshooting](https://hexo.io/docs/troubleshooting.html) or you can ask me on [GitHub](https://github.com/hexojs/hexo/issues).
 more info: [Deployment](https://hexo.io/docs/one-command-deployment.html)
