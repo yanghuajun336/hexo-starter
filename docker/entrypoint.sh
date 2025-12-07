@@ -163,44 +163,26 @@ echo "[hexo-container] Starting webhook listener on port ${WEBHOOK_PORT} (genera
 export PORT=${WEBHOOK_PORT}
 node /usr/local/bin/webhook.js &
 
-
-# Background periodic poller (pull + generate, no server restart)
+# Background periodic poller
 (while true; do
   sleep "${PULL_INTERVAL}"
   if [ -n "${REPO_URL}" ]; then
     echo "[hexo-container] Periodic pull: checking for updates..."
+    git config --global --add safe.directory /var/www/hexo
     git fetch origin "${REPO_BRANCH}" || true
     LOCAL=$(git rev-parse HEAD 2>/dev/null || true)
+    REMOTE=$(git rev-parse "origin/${REPO_BRANCH}" 2>/dev/null || true)
     if [ "${LOCAL}" != "${REMOTE}" ]; then
-      echo "[hexo-container] Changes detected — pulling and regenerating"
+      echo "[hexo-container] Changes detected — pulling and rebuilding"
       git reset --hard "origin/${REPO_BRANCH}" || git pull origin "${REPO_BRANCH}" || true
       npm install --no-audit --no-fund || true
-      ${BUILD_CMD} || true
-      echo "[hexo-container] Regeneration complete; Nginx serves updated public/."
+        ${BUILD_CMD} || true
+      echo "[hexo-container] Restarting Hexo server to apply config changes..."
     else
       echo "[hexo-container] No changes found."
     fi
   fi
 done) &
-# # Background periodic poller
-# (while true; do
-#   sleep "${PULL_INTERVAL}"
-#   if [ -n "${REPO_URL}" ]; then
-#     echo "[hexo-container] Periodic pull: checking for updates..."
-#     git fetch origin "${REPO_BRANCH}" || true
-#     LOCAL=$(git rev-parse HEAD 2>/dev/null || true)
-#     REMOTE=$(git rev-parse "origin/${REPO_BRANCH}" 2>/dev/null || true)
-#     if [ "${LOCAL}" != "${REMOTE}" ]; then
-#       echo "[hexo-container] Changes detected — pulling and rebuilding"
-#       git reset --hard "origin/${REPO_BRANCH}" || git pull origin "${REPO_BRANCH}" || true
-#       npm install --no-audit --no-fund || true
-#         ${BUILD_CMD} || true
-#       echo "[hexo-container] Restarting Hexo server to apply config changes..."
-#     else
-#       echo "[hexo-container] No changes found."
-#     fi
-#   fi
-# done) &
 
 # # Background periodic poller (pull + generate, no server restart)
 # (while true; do
