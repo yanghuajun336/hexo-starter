@@ -2,46 +2,68 @@ version: "3.8"
 
 services:
   hexo:
-    # 方式一：直接使用已经构建的镜像
-    image: hexo-site:latest
-    # 方式二：本地构建（取消注释以下两行以本地构建）
+    # 方式一：使用预构建镜像
+    image: hexo-static:11.0.7
+    
+    # 方式二：本地构建（取消注释）
     # build:
-    #   context: .
+    #   context: . 
+    #   dockerfile: Dockerfile
+    
     container_name: hexo-site
     restart: unless-stopped
+    
     environment:
-      # 基础设置
-      REPO_URL: "${REPO_URL:-https://gitee.com/Joee_Yang/hexo-starter.git}"           # 远程仓库地址（可留空，挂载本地则不需要）
+      # ========== 基础配置 ==========
+      REPO_URL: "${REPO_URL:-https://gitee.com/Joee_Yang/hexo-starter.git}"
       REPO_BRANCH: "${REPO_BRANCH:-master}"
       GIT_USER: "${GIT_USER:-hexo}"
       GIT_EMAIL: "${GIT_EMAIL:-hexo@example.com}"
+      
+      # ========== 端口配置 ==========
       HEXO_PORT: "${HEXO_PORT:-4000}"
       WEBHOOK_PORT: "${WEBHOOK_PORT:-9001}"
       WEBHOOK_SECRET: "${WEBHOOK_SECRET:-}"
-      START_CMD: "${START_CMD:-npx hexo server -i 0.0.0.0 -p $HEXO_PORT}"
+      
+      # ========== 命令配置 ==========
       BUILD_CMD: "${BUILD_CMD:-npx hexo generate}"
+      START_CMD: "${START_CMD:-npx hexo server -i 0.0.0.0 -p 4000}"
+      
+      # ========== 轮询配置 ==========
       PULL_INTERVAL: "${PULL_INTERVAL:-60}"
-
-      # 主题控制
-      THEME_MODE: "${THEME_MODE:-auto}"           # auto | keep | force-butterfly
+      
+      # ========== 主题配置 ==========
+      THEME_MODE: "${THEME_MODE:-auto}"                # auto | keep | force-butterfly
       THEME_NAME: "${THEME_NAME:-butterfly}"
       THEME_REPO: "${THEME_REPO:-https://github.com/jerryc127/hexo-theme-butterfly.git}"
       DEFAULT_SITE_THEME: "${DEFAULT_SITE_THEME:-landscape}"
       ALLOW_CONFIG_INIT: "${ALLOW_CONFIG_INIT:-true}"
-
+    
     ports:
-      - "${HEXO_PORT:-4000}:4000"
-      - "${WEBHOOK_PORT:-9001}:9001"
-
-    # 选择其一：
-    # 1) 使用远程仓库（REPO_URL），可不挂载卷
-    # 2) 挂载本地工作目录作为站点（不设置 REPO_URL）
-    volumes:
-      - ../:/var/www/hexo:rw
-
-    # 可选的健康检查（Hexo server）
+      - "${HEXO_PORT:-4000}:4000"      # 博客访问端口
+      - "${WEBHOOK_PORT:-9001}:9001"   # Webhook 端口
+    
+    # volumes:
+    #   # 挂载本地目录（开发模式）
+    #   - ../:/var/www/hexo:rw
+      
+      # 或使用 Docker 卷（生产模式）
+      # - hexo_data:/var/www/hexo
+    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
+      start_period: 60s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# 可选：使用命名卷
+# volumes:
+#   hexo_data:
+#     driver: local
