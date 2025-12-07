@@ -141,12 +141,13 @@ fi
 
 # If project is mounted from host, node_modules from image are hidden.
 # Ensure project has required renderers locally so Hexo can render pug/stylus.
-if [ -f package.json ] || [ -d node_modules ]; then
+
+if [ -f /var/www/hexo/themes/${THEME_NAME}/package.json ] || [ -d /var/www/hexo/themes/${THEME_NAME}/node_modules ]; then
   need_install="false"
-  if [ ! -d "node_modules/hexo-renderer-pug" ]; then
+  if [ ! -d "/var/www/hexo/themes/${THEME_NAME}/node_modules/hexo-renderer-pug" ]; then
     need_install="true"
   fi
-  if [ ! -d "node_modules/hexo-renderer-stylus" ]; then
+  if [ ! -d "/var/www/hexo/themes/${THEME_NAME}/node_modules/hexo-renderer-stylus" ]; then
     need_install="true"
   fi
   if [ "${need_install}" = "true" ]; then
