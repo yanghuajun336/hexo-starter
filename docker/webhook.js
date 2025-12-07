@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 
 const port = process.env.WEBHOOK_PORT || 9001;
 const secret = process.env.WEBHOOK_SECRET || '';
-const branch = process.env.REPO_BRANCH || 'main';
+let branch = process.env.REPO_BRANCH || 'main';
 const buildCmd = process.env.BUILD_CMD || 'npx hexo generate';
 // In Nginx architecture, we only generate; no server restart needed
 
@@ -36,7 +36,9 @@ const server = http.createServer((req, res) => {
     res.end('Accepted');
     console.log('[webhook] Received payload, triggering pull & build...');
 
-    const cmd = `git fetch origin ${branch} || true && git reset --hard origin/${branch} || git pull origin ${branch} || true && npm install --no-audit --no-fund || true && ${buildCmd}`;
+    // Determine branch to use: prefer configured branch; if missing, fallback to origin/HEAD
+    const detectBranch = `git fetch origin || true; BH=${branch}; HEADREF=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's/^origin\///' || true); git show-ref --verify --quiet "refs/remotes/origin/${branch}" || BH="$HEADREF"; echo "[webhook] Using branch: $BH"; git reset --hard origin/$BH || git pull origin $BH || true`;
+    const cmd = `${detectBranch} && npm install --no-audit --no-fund || true && ${buildCmd}`;
     exec(cmd, {cwd: process.cwd(), env: process.env, shell: '/bin/bash'}, (err, stdout, stderr) => {
       if (err) console.error('[webhook] error:', err);
       if (stdout) console.log('[webhook] stdout:', stdout);

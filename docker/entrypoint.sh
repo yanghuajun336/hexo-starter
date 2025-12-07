@@ -33,11 +33,34 @@ cd /var/www/hexo
 if [ -n "${REPO_URL}" ]; then
   if [ -d .git ]; then
     echo "[hexo-container] Existing repo detected — fetching ${REPO_BRANCH}..."
-    git fetch origin "${REPO_BRANCH}" || true
-    git reset --hard "origin/${REPO_BRANCH}" || git pull origin "${REPO_BRANCH}" || true
+    git fetch origin || true
+    # Determine branch: use REPO_BRANCH if valid, else remote default HEAD
+    remote_head=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)
+    branch_to_use="${REPO_BRANCH}"
+    if ! git show-ref --verify --quiet "refs/remotes/origin/${branch_to_use}"; then
+      if [ -n "${remote_head}" ]; then
+        echo "[hexo-container] Remote branch '${REPO_BRANCH}' not found; falling back to default '${remote_head}'."
+        branch_to_use="${remote_head}"
+      else
+        echo "[hexo-container] Remote default branch detection failed; proceeding without reset."
+        branch_to_use="${REPO_BRANCH}"
+      fi
+    fi
+    git reset --hard "origin/${branch_to_use}" || git pull origin "${branch_to_use}" || true
   else
     echo "[hexo-container] Cloning ${REPO_URL} (branch ${REPO_BRANCH})..."
-    git clone --single-branch --branch "${REPO_BRANCH}" "${REPO_URL}" . || git clone "${REPO_URL}" .
+    if git ls-remote --heads "${REPO_URL}" "${REPO_BRANCH}" >/dev/null 2>&1; then
+      git clone --single-branch --branch "${REPO_BRANCH}" "${REPO_URL}" . || git clone "${REPO_URL}" .
+    else
+      # Fallback to remote HEAD
+      default_branch=$(git ls-remote --symref "${REPO_URL}" HEAD 2>/dev/null | awk '/^ref:/ {sub(/refs\/heads\//,"",$2); print $2; exit}')
+      echo "[hexo-container] Remote branch '${REPO_BRANCH}' not found; cloning default '${default_branch}'."
+      if [ -n "${default_branch}" ]; then
+        git clone --single-branch --branch "${default_branch}" "${REPO_URL}" . || git clone "${REPO_URL}" .
+      else
+        git clone "${REPO_URL}" .
+      fi
+    fi
   fi
 else
   if [ ! -f package.json ] && [ ! -d source ]; then
@@ -144,15 +167,25 @@ node /usr/local/bin/webhook.js &
   sleep "${PULL_INTERVAL}"
   if [ -n "${REPO_URL}" ]; then
     echo "[hexo-container] Periodic pull: checking for updates..."
-    git fetch origin "${REPO_BRANCH}" || true
+    git fetch origin || true
+    # Resolve branch to use
+    remote_head=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)
+    branch_to_use="${REPO_BRANCH}"
+    if ! git show-ref --verify --quiet "refs/remotes/origin/${branch_to_use}"; then
+      branch_to_use="${remote_head:-${REPO_BRANCH}}"
+      echo "[hexo-container] Using branch '${branch_to_use}' for periodic pull."
+    fi
     LOCAL=$(git rev-parse HEAD 2>/dev/null || true)
-    REMOTE=$(git rev-parse "origin/${REPO_BRANCH}" 2>/dev/null || true)
+    REMOTE=$(git rev-parse "origin/${branch_to_use}" 2>/dev/null || true)
     if [ "${LOCAL}" != "${REMOTE}" ]; then
       echo "[hexo-container] Changes detected — pulling and regenerating"
-      git reset --hard "origin/${REPO_BRANCH}" || git pull origin "${REPO_BRANCH}" || true
-      npm install --no-audit --no-fund || true
-      ${BUILD_CMD} || true
-      echo "[hexo-container] Regeneration complete; Nginx serves updated public/."
+      if git reset --hard "origin/${branch_to_use}" || git pull origin "${branch_to_use}"; then
+        npm install --no-audit --no-fund || true
+        ${BUILD_CMD} || true
+        echo "[hexo-container] Regeneration complete; Nginx serves updated public/."
+      else
+        echo "[hexo-container] Pull/reset failed — skip regeneration this cycle."
+      fi
     else
       echo "[hexo-container] No changes found."
     fi
