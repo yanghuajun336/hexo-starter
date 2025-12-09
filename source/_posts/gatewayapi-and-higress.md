@@ -2,8 +2,8 @@
 title: "理解 Gateway API 与 Higress：规范与实现的关系（实践指南）"
 date: 2025-11-28 12:30:00
 categories:
+- 运维
 - Kubernetes
-- Gateway API
 - Higress
 tags:
 - gateway-api

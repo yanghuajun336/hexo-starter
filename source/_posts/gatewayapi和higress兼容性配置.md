@@ -2,9 +2,8 @@
 title: "PhotoPrism 在 Kubernetes 上 CrashLoopBackOff 的排查与 Gateway API / Higress 兼容性处理实战"
 date: 2025-11-28 12:00:00
 categories:
+- 运维
 - Kubernetes
-- PhotoPrism
-- Gateway API
 - Higress
 tags:
 - photoprism

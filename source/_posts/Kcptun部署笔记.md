@@ -1,6 +1,12 @@
 ---
 title: Kcptun 部署笔记
 index_img: https://www.qinzc.me/admin/editor/php/upload/62461552309694.png
+categories:
+- 运维
+- 实用工具
+- kcptun
+tags:
+- kcptun
 ---
 > kcptun 极速网络隧道，让数据传输飞起来！
 

@@ -4,6 +4,7 @@ date: 2025-10-23 11:00:00
 categories:
   - Kubernetes
   - 运维
+  - 实践
 tags:
   - Kubernetes
   - Master 节点

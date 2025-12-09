@@ -2,13 +2,14 @@
 title: "Gateway + HTTPRoute：主机名不匹配导致路由无效（实战总结）"
 date: 2025-11-30 12:00:00
 tags:
+  - 运维
   - Kubernetes
   - GatewayAPI
   - Higress
   - HTTPRoute
 categories:
   - 运维
-  - 路由
+  - HTTPRoute
 ---
 
 本文总结了一次在 Higress/Gateway API 环境中，HTTPRoute 无法生效的排查与修复过程。
