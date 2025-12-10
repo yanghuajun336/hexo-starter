@@ -258,12 +258,12 @@ if [ -n "${REPO_URL}" ]; then
         echo "[hexo-container] Pulling and regenerating..."
         
         if git reset --hard "origin/${BRANCH}" || git pull origin "${BRANCH}"; then
-          npm install --no-audit --no-fund --loglevel=error || true
+          # npm install --no-audit --no-fund --loglevel=error || true
           
           # 确保渲染器已安装
-          if [ ! -d "node_modules/hexo-renderer-pug" ] || [ ! -d "node_modules/hexo-renderer-stylus" ]; then
-            npm install --save --no-audit --no-fund hexo-renderer-pug hexo-renderer-stylus --loglevel=error || true
-          fi
+          # if [ ! -d "node_modules/hexo-renderer-pug" ] || [ ! -d "node_modules/hexo-renderer-stylus" ]; then
+          #  npm install --save --no-audit --no-fund hexo-renderer-pug hexo-renderer-stylus --loglevel=error || true
+          #fi
           
           ${BUILD_CMD} || {
             echo "[hexo-container] Build failed!"
